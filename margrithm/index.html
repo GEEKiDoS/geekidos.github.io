@@ -1,19 +1,21 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>D4DJ-ChartOneKey</title>
-    <base href="/d4dj/import/" />
+    <title>Margrithm</title>
+    <base href="/margrithm/" />
     <link href="css/bootstrap/bootstrap.min.css" rel="stylesheet" />
     <link href="css/app.css" rel="stylesheet" />
+    <link href="Margrithm.styles.css" rel="stylesheet" />
     <link href="manifest.json" rel="manifest" />
     <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png" />
 </head>
 
 <body>
-    <app>Loading...</app>
+    <div id="app">Loading...</div>
 
     <div id="blazor-error-ui">
         An unhandled error has occurred.
@@ -22,26 +24,22 @@
     </div>
     <script>
         // from https://www.meziantou.net/generating-and-downloading-a-file-in-a-blazor-webassembly-application.htm
-        function BlazorDownloadFileFast(name, contentType, content) {
-            // Convert the parameters to actual JS types
-            const nameStr = BINDING.conv_string(name);
-            const contentTypeStr = BINDING.conv_string(contentType);
-            const contentArray = Blazor.platform.toUint8Array(content);
-
+        // Use it for .NET 6+
+        function BlazorDownloadFile(filename, contentType, content) {
             // Create the URL
-            const file = new File([contentArray], nameStr, { type: contentTypeStr });
+            const file = new File([content], filename, { type: contentType });
             const exportUrl = URL.createObjectURL(file);
 
             // Create the <a> element and click on it
             const a = document.createElement("a");
             document.body.appendChild(a);
             a.href = exportUrl;
-            a.download = nameStr;
+            a.download = filename;
             a.target = "_self";
             a.click();
 
-            // We don't need to keep the url, let's release the memory
-            // On Safari it seems you need to comment this line... (please let me know if you know why)
+            // We don't need to keep the object URL, let's release the memory
+            // On older versions of Safari, it seems you need to comment this line...
             URL.revokeObjectURL(exportUrl);
         }
     </script>
