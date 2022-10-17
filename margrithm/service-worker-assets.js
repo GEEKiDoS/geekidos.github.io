@@ -33,7 +33,7 @@
       "url": "_framework\/icudt.dat"
     },
     {
-      "hash": "sha256-5v6J6GVvYdJThQNsCQB+vgzdY0sPZ4pDHTP3eZs3zkU=",
+      "hash": "sha256-KBRxIdSjHS8lQWe16JF4u3PB9V+k1cqmbeL0MuB3F6U=",
       "url": "_framework\/blazor.boot.json"
     },
     {
@@ -41,7 +41,7 @@
       "url": "_framework\/Margrete2S.dll"
     },
     {
-      "hash": "sha256-qpQM1X\/jpPrqJPnrO6kQqRsw4rwcXylKEBjIUqV1zUU=",
+      "hash": "sha256-QTZcVgMO7RbJ2TS0Kh38KbMePKvusAmtYTVXLPs3+eA=",
       "url": "_framework\/Margrithm.dll"
     },
     {
@@ -277,5 +277,5 @@
       "url": "manifest.json"
     }
   ],
-  "version": "eHJa+VEJ"
+  "version": "jjE6jHUP"
 };
