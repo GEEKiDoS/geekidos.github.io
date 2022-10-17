@@ -33,15 +33,15 @@
       "url": "_framework\/icudt.dat"
     },
     {
-      "hash": "sha256-dsUGUGroEFDlHJnoOc24Yj+GmSFN9fDF+og+12ueMx4=",
+      "hash": "sha256-Liqyx51iWHMvmXCMrWUgJSIA5TyneVDVLugiHnz+96Y=",
       "url": "_framework\/blazor.boot.json"
     },
     {
-      "hash": "sha256-OAc9fHGu6Ib0T9d2Bn+QP504lvudUbS5Z6YzFePFO78=",
+      "hash": "sha256-27CWbG7ztvNbMwUgIOuoWiCI+V45m8yFYe\/3ndfWW\/s=",
       "url": "_framework\/Margrete2S.dll"
     },
     {
-      "hash": "sha256-QTZcVgMO7RbJ2TS0Kh38KbMePKvusAmtYTVXLPs3+eA=",
+      "hash": "sha256-\/AQBTDxLod9VUdZ5gUEE89PHsI5Vpi758OjwDQaUpOw=",
       "url": "_framework\/Margrithm.dll"
     },
     {
@@ -177,7 +177,7 @@
       "url": "_framework\/System.ObjectModel.dll"
     },
     {
-      "hash": "sha256-MXsPszRgKYNS1uMP9JeMOe4zDPPhmIwm7zXBFqOv2Sk=",
+      "hash": "sha256-+r6nLgROVqOX3yUa6ODq9hVyQms\/bgMV+HaHLTtlC\/c=",
       "url": "_framework\/System.Private.CoreLib.dll"
     },
     {
@@ -193,7 +193,7 @@
       "url": "_framework\/System.Runtime.CompilerServices.Unsafe.dll"
     },
     {
-      "hash": "sha256-d9U+IZvql6h8Lnvd9H+Odq\/NyZFup2KDlYbagUhE4jY=",
+      "hash": "sha256-aMeW2UOldPJsvZdshI+zGTXoimgUSGG23Di\/7iPo5zY=",
       "url": "_framework\/System.Runtime.dll"
     },
     {
@@ -277,5 +277,5 @@
       "url": "manifest.json"
     }
   ],
-  "version": "rtOzMFTH"
+  "version": "z+sIjQ8p"
 };
