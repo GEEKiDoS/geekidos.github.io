@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chunithm Verse 定数表</title>
+    <style>
+        td {
+            vertical-align: top;
+        }
+
+        td>div {
+            display: inline-block;
+            margin: 5px;
+            overflow: hidden;
+            width: 100px;
+            position: relative;
+        }
+
+        td>div>h6 {
+            position: absolute;
+            width: 100%;
+            bottom: 0;
+            margin: 0;
+            padding: 2px;
+            color: #fff;
+            background-color: rgba(0, 0, 0, 0.5);
+            font-size: 9px;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+
+        img {
+            display: block;
+            width: 100px;
+            height: 100px;
+        }
+
+        .bas {
+            border: 5px green solid;
+        }
+
+        .adv {
+            border: 5px orange solid;
+        }
+
+        .exp {
+            border: 5px red solid
+        }
+
+        .mas {
+            border: 5px #610ebe solid;
+        }
+
+        .ult {
+            border: 5px black dashed;
+            background-color: red;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="container">
+
+    </div>
+    <script src="musics.js"></script>
+    <script type="module">
+        const diffClass = ['bas', 'adv', 'exp', 'mas', 'ult', ''];
+
+        const range = [110, 159];
+
+        const table = document.createElement('table');
+        const tbody = document.createElement('tbody');
+        table.appendChild(tbody);
+
+        for (let level = range[1] - 1; level >= range[0]; level -= 1) {
+            const contents = [];
+            for (const music of window.musics) {
+                for (let i = 0; i < 5; i++) {
+                    if ((music.fumens[i] * 10) != level)
+                        continue;
+
+                    const img = document.createElement('img');
+                    img.src = 'images/' + music.dds + '.jpg';
+                    img.alt = music.name;
+
+                    const h6 = document.createElement('h6');
+                    h6.innerText = music.name;
+
+                    const div = document.createElement('div');
+                    div.classList.add(diffClass[i]);
+                    div.appendChild(img);
+                    div.appendChild(h6);
+
+                    contents.push(div);
+                }
+            }
+
+            if (!contents.length)
+                continue;
+
+            const tr = document.createElement('tr');
+            const header = document.createElement('td');
+            header.innerText = level / 10;
+            header.class = "level";
+            tr.appendChild(header);
+
+            const covers = document.createElement('td');
+            contents.forEach(v => covers.appendChild(v));
+            tr.appendChild(covers);
+
+            tbody.appendChild(tr);
+        }
+
+        document.querySelector('#container').appendChild(table);
+    </script>
+</body>
+
+</html>
