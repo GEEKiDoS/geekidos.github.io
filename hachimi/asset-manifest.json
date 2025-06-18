@@ -1,0 +1,22 @@
+{
+  "files": {
+    "main.css": "/hachimi/static/css/main.5238747f.chunk.css",
+    "main.js": "/hachimi/static/js/main.7e8c3124.chunk.js",
+    "main.js.map": "/hachimi/static/js/main.7e8c3124.chunk.js.map",
+    "runtime-main.js": "/hachimi/static/js/runtime-main.7652788c.js",
+    "runtime-main.js.map": "/hachimi/static/js/runtime-main.7652788c.js.map",
+    "static/js/2.b19e9550.chunk.js": "/hachimi/static/js/2.b19e9550.chunk.js",
+    "static/js/2.b19e9550.chunk.js.map": "/hachimi/static/js/2.b19e9550.chunk.js.map",
+    "index.html": "/hachimi/index.html",
+    "precache-manifest.4f3369f87fd47ab3300a25fed5653e2d.js": "/hachimi/precache-manifest.4f3369f87fd47ab3300a25fed5653e2d.js",
+    "service-worker.js": "/hachimi/service-worker.js",
+    "static/css/main.5238747f.chunk.css.map": "/hachimi/static/css/main.5238747f.chunk.css.map",
+    "static/js/2.b19e9550.chunk.js.LICENSE.txt": "/hachimi/static/js/2.b19e9550.chunk.js.LICENSE.txt"
+  },
+  "entrypoints": [
+    "static/js/runtime-main.7652788c.js",
+    "static/js/2.b19e9550.chunk.js",
+    "static/css/main.5238747f.chunk.css",
+    "static/js/main.7e8c3124.chunk.js"
+  ]
+}
