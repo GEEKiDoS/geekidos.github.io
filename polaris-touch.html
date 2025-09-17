@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Polaris Touch</title>
+    <style>
+        body {
+            margin: 0;
+            touch-action: none;
+            background-color: #000;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        * {
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .container {
+            height: 100vh;
+        }
+
+        .fader {
+            display: flex;
+            height: 50vh;
+        }
+
+        .fader>div {
+            width: 50%;
+            position: relative;
+            overflow: visible;
+        }
+
+        .fader>div>.position {
+            position: absolute;
+            height: 100%;
+            width: 2px;
+            background-color: rgb(255, 255, 0);
+            display: none;
+            z-index: 999;
+        }
+
+        .fader>div>.position.visible {
+            display: block;
+        }
+
+        .fader #left {
+            background: linear-gradient(to right, rgba(69, 233, 123, 0.8), rgba(69, 233, 123, 0.4));
+        }
+
+        .fader #right {
+            background: linear-gradient(to left, rgba(218, 69, 216, 0.8), rgba(218, 69, 216, 0.4));
+        }
+
+        .lane {
+            display: flex;
+            background-color: #000;
+            height: 50vh;
+        }
+
+        .lane>div {
+            width: calc(100vw / 12);
+            color: #fff;
+        }
+
+        .lane>div:not(:last-child) {
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .lane>div.active {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .status {
+            background-color: #000;
+            color: #ccc;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+
+            font-size: 12px;
+            line-height: 24px;
+            display: flex;
+        }
+
+        .status>div {
+            padding-left: 1em;
+            padding-right: 1em;
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+        }
+    </style>
+    <script>
+        document.addEventListener('gesturestart', function (e) {
+            e.preventDefault();
+        });
+    </script>
+</head>
+
+<body>
+    <div class="container">
+        <div class="status">
+            <div id="fps">0 Hz</div>
+            <div id="fader">CENTER | CENTER</div>
+            <div id="connection">NOT CONNECTED</div>
+            <div id="server"></div>
+        </div>
+        <div class="fader">
+            <div id="left">
+                <div class="position"></div>
+            </div>
+            <div id="right">
+                <div class="position"></div>
+            </div>
+        </div>
+        <div class="lane">
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+        </div>
+    </div>
+    <script>
+        class TouchManager {
+            touches = [];
+            touchEndCallback = undefined;
+
+            init() {
+                document.body.addEventListener("touchmove", (e) => {
+                    for (const touch of e.changedTouches) {
+                        const index = this.touches.findIndex(t => touch.identifier == t.identifier);
+                        if (index != -1) {
+                            this.touches[index] = touch;
+                        }
+                    }
+
+                    e.preventDefault();
+                });
+
+                document.body.addEventListener("touchstart", (e) => {
+                    this.touches.push(...e.changedTouches);
+                    e.preventDefault();
+                });
+
+                document.body.addEventListener("touchend", (e) => {
+                    const endedTouches = Array.from(e.changedTouches).map(v => v.identifier);
+                    e.preventDefault();
+
+                    setTimeout(() => {
+                        this.touches = this.touches.filter(v => !endedTouches.includes(v.identifier));
+                        if (this.touchEndCallback) {
+                            this.touchEndCallback(endedTouches);
+                        }
+                    }, 16);
+                });
+
+                document.body.addEventListener("touchcancel", (e) => {
+                    const cenceledTouches = Array.from(e.changedTouches).map(v => v.identifier);
+                    e.preventDefault();
+
+                    setTimeout(() => {
+                        this.touches = this.touches.filter(v => !cenceledTouches.includes(v.identifier));
+                        if (this.touchEndCallback) {
+                            this.touchEndCallback(cenceledTouches);
+                        }
+                    }, 16);
+                });
+            }
+        }
+
+        window.touchMgr = new TouchManager();
+        window.touchMgr.init();
+    </script>
+    <script>
+        const statusServer = document.querySelector("#server");
+        const promptServer = () => {
+            const ipPort = prompt("SpiceAPI Endpoint (IP:PORT) !!!PLEASE DISABLE PASSWORD!!!", `${window.location.hostname}:1337`);
+            const [ip, port] = ipPort.split(':');
+
+            return `ws://${ip}:${parseInt(port) + 1}/`;
+        }
+
+        const connect = () => {
+            const ctx = {
+                socket: new WebSocket(spiceHost),
+                statusElement: document.querySelector("#connection"),
+                send(command) {
+                    const packet = new TextEncoder().encode(JSON.stringify(command) + '\0');
+                    this.socket.send(packet);
+                },
+                valid() {
+                    return !(this.socket == null);
+                },
+                connected() {
+                    return this.socket.readyState == WebSocket.OPEN;
+                },
+                disconnect() {
+                    this.socket.close();
+                },
+                id: 0,
+            };
+
+            ctx.socket.onopen = e => {
+                ctx.statusElement.innerHTML = "CONNECTED";
+            };
+
+            ctx.socket.onerror = e => {
+                ctx.statusElement.innerHTML = "ERROR";
+                ctx.socket.close();
+
+                window.ctx = connect();
+            };
+
+            ctx.socket.onclose = e => {
+                ctx.statusElement.innerHTML = "DISCONNECTED";
+                ctx.socket = null;
+            };
+
+            return ctx;
+        };
+
+        let spiceHost = window.localStorage.getItem("api_backend");
+        if (!spiceHost) {
+            spiceHost = promptServer();
+            window.localStorage.setItem("api_backend", spiceHost);
+        }
+
+        statusServer.innerHTML = spiceHost;
+
+        window.ctx = connect();
+        setInterval(() => {
+            if (!window.ctx || !window.ctx.valid()) {
+                window.ctx = connect();
+            }
+        }, 1000);
+
+        let statusServerTouchStart = 0;
+        statusServer.addEventListener("touchstart", () => {
+            statusServerTouchStart = Date.now();
+        });
+
+        statusServer.addEventListener("touchend", () => {
+            const delta = Date.now() - statusServerTouchStart;
+            if (delta < 2000) {
+                return;
+            }
+
+            spiceHost = promptServer();
+            window.localStorage.setItem("api_backend", spiceHost);
+            window.ctx.disconnect();
+            window.ctx = connect();
+        });
+
+        const laneState = [];
+        const lanes = document.querySelectorAll(".lane>div");
+        lanes.forEach((lane) => {
+            laneState.push(false);
+        });
+
+        let frames = 0;
+        let lastUpdate = Date.now();
+        const statusFps = document.querySelector("#fps");
+        const statusFader = document.querySelector("#fader");
+
+        const FADER_DEAD_ZONE = 10;
+        const faderPositions = document.querySelectorAll(".fader .position");
+        const faderTouches = [null, null];
+        const lastFaderPositions = [null, null];
+        const faderDirs = [0, 0];
+
+        let lastLaneState = laneState.slice();
+        let lastFaderDirs = [0, 0];
+
+        const sendState = () => {
+            if (!ctx.valid() || !ctx.connected()) {
+                return;
+            }
+
+            const buttonDelta = [];
+            for (let i = 0; i < laneState.length; i++) {
+                const cur = laneState[i];
+                const last = lastLaneState[i];
+                if (cur != last) {
+                    buttonDelta.push([`Button ${i + 1}`, cur ? 1 : 0]);
+                }
+            }
+
+            if (buttonDelta.length) {
+                ctx.send({
+                    id: ctx.id++,
+                    module: "buttons",
+                    function: "write",
+                    params: buttonDelta,
+                });
+
+                lastLaneState = laneState.slice();
+            }
+
+            const analogDelta = [];
+            for (let i = 0; i < faderDirs.length; i++) {
+                const cur = faderDirs[i];
+                const last = lastFaderDirs[i];
+                if (cur != last) {
+                    const value = cur > 0 ? 1 : cur < 0 ? 0 : 0.5;
+                    analogDelta.push([`Fader-${['L', 'R'][i]}`, value]);
+                }
+            }
+
+            if (analogDelta.length) {
+                ctx.send({
+                    id: ctx.id++,
+                    module: "analogs",
+                    function: "write",
+                    params: analogDelta,
+                });
+
+                lastFaderDirs = faderDirs.slice();
+            }
+        };
+
+        const update = () => {
+            // console.log(window.touchMgr.touches);
+            handleTouches(window.touchMgr.touches);
+
+            for (let i = 0; i < lanes.length; i++) {
+                const column = lanes[i];
+                const isTouched = laneState[i];
+
+                if (isTouched) {
+                    column.classList.add("active");
+                } else {
+                    column.classList.remove("active");
+                }
+            }
+
+            const areaWidth = document.body.clientWidth / 2;
+
+            for (let i = 0; i < 2; i++) {
+                const faderTouch = faderTouches[i];
+                const faderPosition = faderPositions[i];
+                if (!faderTouch) {
+                    faderPosition.classList.remove("visible");
+                    continue;
+                }
+
+                const x = faderTouch.clientX - (i * areaWidth);
+
+                if (lastFaderPositions[i] !== null) {
+                    const delta = x - lastFaderPositions[i];
+                    if (Math.abs(delta) > FADER_DEAD_ZONE) {
+                        faderDirs[i] = Math.sign(delta);
+                    }
+                } else {
+                    faderDirs[i] = 0;
+                }
+
+                lastFaderPositions[i] = x;
+
+                faderPosition.classList.add("visible");
+                faderPosition.style = `left: ${x}px`;
+            }
+
+            frames++;
+
+            if (Date.now() - lastUpdate > 1000) {
+                lastUpdate = Date.now();
+                statusFps.innerHTML = `${frames} Hz`;
+                frames = 0;
+
+                if (!ctx || !ctx.valid()) {
+                    ctx = connect();
+                }
+            }
+
+            statusFader.innerHTML = faderDirs.map(v => v > 0 ? "RIGHT" : v < 0 ? "LEFT" : "CENTER").join(' | ');
+            sendState();
+        };
+
+        const laneArea = document.querySelector(".lane");
+
+        const handleTouches = (touches) => {
+            laneState.fill(false);
+            for (const touch of touches) {
+                const x = touch.clientX / document.body.clientWidth;
+                const y = touch.clientY / document.body.clientHeight;
+
+                if (touch.identifier == faderTouches[0]?.identifier) {
+                    faderTouches[0] = touch;
+                    continue;
+                }
+                if (touch.identifier == faderTouches[1]?.identifier) {
+                    faderTouches[1] = touch;
+                    continue;
+                }
+
+                if (y > 0.5) {
+                    const column = Math.floor(x * 12);
+                    laneState[column] = true;
+                    continue;
+                }
+
+                if (faderTouches[1] && touch.clientX < faderTouches[1].clientX) {
+                    faderTouches[0] = touch;
+                } else if (x < 0.5 && !faderTouches[0]) {
+                    faderTouches[0] = touch;
+                }
+
+
+                if (faderTouches[0] && touch.clientX > faderTouches[0].clientX) {
+                    faderTouches[1] = touch;
+                } else if (x > 0.5 && !faderTouches[1]) {
+                    faderTouches[1] = touch;
+                }
+            }
+        };
+
+        window.touchMgr.touchEndCallback = (touches) => {
+            for (let i = 0; i < 2; i++) {
+                if (!faderTouches[i]) {
+                    continue
+                }
+
+                for (const identifier of touches) {
+                    if (faderTouches[i].identifier !== identifier) {
+                        continue
+                    }
+
+                    faderTouches[i] = null;
+                    lastFaderPositions[i] = null;
+                    faderDirs[i] = 0;
+                    break;
+                }
+            }
+        }
+
+        setInterval(() => {
+            update();
+        }, 8);
+    </script>
+</body>
+
+</html>
