@@ -172,7 +172,7 @@
                         if (this.touchEndCallback) {
                             this.touchEndCallback(cenceledTouches);
                         }
-                    }, 16);
+                    }, 17);
                 });
             }
         }
@@ -181,9 +181,14 @@
         window.touchMgr.init();
     </script>
     <script>
+        if (window.location.protocol.toLowerCase() == "https:") {
+            alert("Please use HTTP instead, You can't connect to insecure websocket in https environment.");
+            throw new Error("NO_HTTPS");
+        }
+
         const statusServer = document.querySelector("#server");
         const promptServer = () => {
-            const ipPort = prompt("SpiceAPI Endpoint (IP:PORT) !!!PLEASE DISABLE PASSWORD!!!", `${window.location.hostname}:1337`);
+            const ipPort = prompt("Enter SpiceAPI Endpoint (IP:PORT)\n\nREAD THIS:\nPlease disable password as I don't want to write the RC4 code.\n\nTouch the \"ws://.....\" on status bar for more than 2s then release for re-set SpiceAPI endpoint.\n\nThanks for your using, by GEEKi", "127.0.0.1:1337");
             const [ip, port] = ipPort.split(':');
 
             return `ws://${ip}:${parseInt(port) + 1}/`;
