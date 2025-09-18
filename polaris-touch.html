@@ -39,38 +39,77 @@
 class TouchManager {
   onTouchEnd = void 0;
   onTouchChange = void 0;
+  onTouchStart = void 0;
   touchStartTimes = /* @__PURE__ */ new Map();
   constructor() {
-    document.body.addEventListener("touchmove", (e) => {
+    document.addEventListener("touchmove", (e) => {
       if (this.onTouchChange) {
         this.onTouchChange(e.changedTouches);
       }
       e.preventDefault();
     });
-    document.body.addEventListener("touchstart", (e) => {
+    document.addEventListener("touchstart", (e) => {
       for (const touch of e.changedTouches) {
         this.touchStartTimes.set(touch.identifier, Date.now());
       }
+      if (this.onTouchStart) {
+        this.onTouchStart(e.changedTouches);
+      }
       if (this.onTouchChange) {
         this.onTouchChange(e.changedTouches);
       }
       e.preventDefault();
     });
-    document.body.addEventListener("touchend", (e) => {
-      this.touchEnd(e);
+    document.addEventListener("touchend", (e) => {
+      this.touchEnd(e.changedTouches);
       e.preventDefault();
     });
-    document.body.addEventListener("touchcancel", (e) => {
-      this.touchEnd(e);
+    document.addEventListener("touchcancel", (e) => {
+      this.touchEnd(e.changedTouches);
       e.preventDefault();
+    });
+    document.addEventListener("mousedown", (e) => {
+      const fakeTouch = {
+        clientX: e.clientX,
+        clientY: e.clientY,
+        identifier: "MOUSE"
+      };
+      this.touchStartTimes.set(fakeTouch.identifier, Date.now());
+      if (this.onTouchStart) {
+        this.onTouchStart([fakeTouch]);
+      }
+      if (this.onTouchChange) {
+        this.onTouchChange([fakeTouch]);
+      }
+    });
+    document.addEventListener("mousemove", (e) => {
+      if (!this.touchStartTimes.has("MOUSE")) {
+        return;
+      }
+      const fakeTouch = {
+        clientX: e.clientX,
+        clientY: e.clientY,
+        identifier: "MOUSE"
+      };
+      if (this.onTouchChange) {
+        this.onTouchChange([fakeTouch]);
+      }
+    });
+    document.addEventListener("mouseup", (e) => {
+      const fakeTouch = {
+        clientX: e.clientX,
+        clientY: e.clientY,
+        identifier: "MOUSE"
+      };
+      this.touchEnd([fakeTouch]);
     });
   }
-  touchEnd(e) {
+  touchEnd(changedTouches) {
     if (this.onTouchChange) {
-      this.onTouchChange(e.touches);
+      this.onTouchChange(changedTouches, true);
     }
     const instaRelease = [];
-    for (const touch of e.changedTouches) {
+    for (const touch of changedTouches) {
       const startTime = this.touchStartTimes.get(touch.identifier);
       if (startTime == void 0) {
         throw new Error("?");
@@ -87,7 +126,7 @@ class TouchManager {
         }
       }, 16 - duration);
     }
-    if (this.onTouchEnd) {
+    if (this.onTouchEnd && instaRelease.length) {
       this.onTouchEnd(instaRelease);
     }
   }
@@ -181,21 +220,24 @@ function listenHold(element, callback, duration = 2e3) {
   });
 }
 const FADER_DEAD_ZONE = 10;
-function getSpiceHost(reset = false) {
+function getSpiceHost(reset = false, text = null) {
   let spiceHost = reset ? null : window.localStorage.getItem("api_backend");
   if (spiceHost) {
     return spiceHost;
   }
-  const ipPort = prompt(`Enter SpiceAPI Endpoint (IP:PORT)
+  const ipPort = prompt(text ?? `Enter SpiceAPI Endpoint (IP:PORT)
 
 READ THIS:
 Please disable password as I don't want to write the RC4 code.
 
 Touch the "ws://....." on status bar for more than 2s then release for re-set SpiceAPI endpoint.
 
-Thanks for your using, by GEEKi`, "127.0.0.1:1337");
+Thanks for your using, by GEEKi`, "192.168.1.100:1337");
   if (!ipPort) {
-    return getSpiceHost(true);
+    return getSpiceHost(true, "Please enter SpiceAPI Endpoint");
+  }
+  if (!/\d+\.\d+\.\d+\.\d+\:\d+/.test(ipPort)) {
+    return getSpiceHost(true, "Please enter a correct SpiceAPI Endpoint\n(example: 192.168.1.100:1337):");
   }
   const [ip, port] = ipPort.split(":");
   spiceHost = `ws://${ip}:${parseInt(port) + 1}/`;
@@ -330,24 +372,12 @@ function removeTouches(touches) {
   }
   return changed;
 }
-window.touchMgr.onTouchChange = (touches) => {
+window.touchMgr.onTouchStart = (touches) => {
   const touchArr = Array.from(touches);
-  let changed = removeTouches(touchArr);
   for (const touch of touchArr) {
     const x = touch.clientX / document.body.clientWidth;
     const y = touch.clientY / document.body.clientHeight;
-    if (touch.identifier == faderTouches[0]?.identifier) {
-      faderTouches[0] = touch;
-      continue;
-    }
-    if (touch.identifier == faderTouches[1]?.identifier) {
-      faderTouches[1] = touch;
-      continue;
-    }
     if (y > 0.5) {
-      const column = Math.max(0, Math.min(Math.floor(x * 12), 11));
-      laneTouches[column].push(touch.identifier);
-      changed = true;
       continue;
     }
     if (faderTouches[1] && touch.clientX < faderTouches[1].clientX) {
@@ -361,9 +391,31 @@ window.touchMgr.onTouchChange = (touches) => {
       faderTouches[1] = touch;
     }
   }
+};
+window.touchMgr.onTouchChange = (touches, noSend) => {
+  const touchArr = Array.from(touches);
+  let changed = removeTouches(touchArr);
+  for (const touch of touchArr) {
+    const x = touch.clientX / document.body.clientWidth;
+    const y = touch.clientY / document.body.clientHeight;
+    if (touch.identifier == faderTouches[0]?.identifier) {
+      faderTouches[0] = touch;
+      continue;
+    }
+    if (touch.identifier == faderTouches[1]?.identifier) {
+      faderTouches[1] = touch;
+      continue;
+    }
+    if (y < 0.5) {
+      continue;
+    }
+    const column = Math.max(0, Math.min(Math.floor(x * 12), 11));
+    laneTouches[column].push(touch.identifier);
+    changed = true;
+  }
   if (changed) {
     updateLaneState();
-    sendButtonState(laneState);
+    if (!noSend) sendButtonState(laneState);
   }
   frames++;
 };
@@ -457,16 +509,16 @@ requestAnimationFrame(update);</script>
 .fader>div {
   width: 50%;
   position: relative;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .fader>div>.position {
   position: absolute;
   height: 100%;
   width: 2px;
-  background-color: rgb(255, 255, 0);
   display: none;
   z-index: 999;
+  transform: translateX(-1px);
 }
 
 .fader>div>.position.visible {
@@ -477,8 +529,16 @@ requestAnimationFrame(update);</script>
   background: linear-gradient(to right, rgba(69, 233, 123, 0.8), rgba(69, 233, 123, 0.4));
 }
 
+.fader #left .position {
+  background-color: rgba(0, 255, 0);
+}
+
 .fader #right {
   background: linear-gradient(to left, rgba(218, 69, 216, 0.8), rgba(218, 69, 216, 0.4));
+}
+
+.fader #right .position {
+  background-color: rgba(255, 0, 255);
 }
 
 .lane {
@@ -549,5 +609,6 @@ requestAnimationFrame(update);</script>
             <div></div>
         </div>
     </div>
+
 </body>
 </html>
