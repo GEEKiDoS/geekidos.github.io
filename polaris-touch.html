@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <title>Polaris Touch</title>
@@ -42,6 +42,7 @@ class TouchManager {
   onTouchEnd = void 0;
   touches = /* @__PURE__ */ new Map();
   constructor() {
+    document.addEventListener("touchend", (e) => e.preventDefault());
     document.addEventListener("pointerdown", (e) => {
       const finger = {
         id: e.pointerId,
@@ -74,6 +75,13 @@ class TouchManager {
       e.preventDefault();
     });
     document.addEventListener("pointerup", (e) => {
+      this.touchEnd({
+        id: e.pointerId,
+        x: e.clientX,
+        y: e.clientY
+      });
+    });
+    document.addEventListener("pointercancel", (e) => {
       this.touchEnd({
         id: e.pointerId,
         x: e.clientX,
@@ -422,6 +430,7 @@ requestAnimationFrame(update);</script>
 * {
   user-select: none;
   -webkit-user-select: none;
+  touch-action: manipulation;
 }
 
 .container {
