@@ -116,7 +116,7 @@ class TouchManager {
       }
       const duration = Date.now() - startTime;
       this.touchStartTimes.delete(touch.identifier);
-      if (duration > 16) {
+      if (duration > 8) {
         instaRelease.push(touch);
         continue;
       }
@@ -124,7 +124,7 @@ class TouchManager {
         if (this.onTouchEnd) {
           this.onTouchEnd([touch]);
         }
-      }, 16 - duration);
+      }, 8 - duration);
     }
     if (this.onTouchEnd && instaRelease.length) {
       this.onTouchEnd(instaRelease);
