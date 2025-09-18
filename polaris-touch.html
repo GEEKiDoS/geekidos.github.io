@@ -37,97 +37,58 @@
   }
 })();
 class TouchManager {
-  onTouchEnd = void 0;
-  onTouchChange = void 0;
   onTouchStart = void 0;
-  touchStartTimes = /* @__PURE__ */ new Map();
+  onTouchChange = void 0;
+  onTouchEnd = void 0;
+  touches = /* @__PURE__ */ new Map();
   constructor() {
-    document.addEventListener("touchmove", (e) => {
-      if (this.onTouchChange) {
-        this.onTouchChange(e.changedTouches);
-      }
-      e.preventDefault();
-    });
-    document.addEventListener("touchstart", (e) => {
-      for (const touch of e.changedTouches) {
-        this.touchStartTimes.set(touch.identifier, Date.now());
-      }
-      if (this.onTouchStart) {
-        this.onTouchStart(e.changedTouches);
-      }
-      if (this.onTouchChange) {
-        this.onTouchChange(e.changedTouches);
-      }
-      e.preventDefault();
-    });
-    document.addEventListener("touchend", (e) => {
-      this.touchEnd(e.changedTouches);
-      e.preventDefault();
-    });
-    document.addEventListener("touchcancel", (e) => {
-      this.touchEnd(e.changedTouches);
-      e.preventDefault();
-    });
-    document.addEventListener("mousedown", (e) => {
-      const fakeTouch = {
-        clientX: e.clientX,
-        clientY: e.clientY,
-        identifier: "MOUSE"
+    document.addEventListener("pointerdown", (e) => {
+      const finger = {
+        id: e.pointerId,
+        x: e.clientX,
+        y: e.clientY
       };
-      this.touchStartTimes.set(fakeTouch.identifier, Date.now());
       if (this.onTouchStart) {
-        this.onTouchStart([fakeTouch]);
+        this.onTouchStart(finger);
       }
+      this.touches.set(e.pointerId, finger);
+      const touches = Array.from(this.touches.values());
       if (this.onTouchChange) {
-        this.onTouchChange([fakeTouch]);
+        this.onTouchChange(touches);
       }
+      e.preventDefault();
     });
-    document.addEventListener("mousemove", (e) => {
-      if (!this.touchStartTimes.has("MOUSE")) {
+    document.addEventListener("pointermove", (e) => {
+      if (!this.touches.has(e.pointerId)) {
         return;
       }
-      const fakeTouch = {
-        clientX: e.clientX,
-        clientY: e.clientY,
-        identifier: "MOUSE"
-      };
+      this.touches.set(e.pointerId, {
+        id: e.pointerId,
+        x: e.clientX,
+        y: e.clientY
+      });
+      const touches = Array.from(this.touches.values());
       if (this.onTouchChange) {
-        this.onTouchChange([fakeTouch]);
+        this.onTouchChange(touches);
       }
+      e.preventDefault();
     });
-    document.addEventListener("mouseup", (e) => {
-      const fakeTouch = {
-        clientX: e.clientX,
-        clientY: e.clientY,
-        identifier: "MOUSE"
-      };
-      this.touchEnd([fakeTouch]);
+    document.addEventListener("pointerup", (e) => {
+      this.touchEnd({
+        id: e.pointerId,
+        x: e.clientX,
+        y: e.clientY
+      });
     });
   }
-  touchEnd(changedTouches) {
+  touchEnd(finger) {
+    this.touches.delete(finger.id);
+    const touches = Array.from(this.touches.values());
     if (this.onTouchChange) {
-      this.onTouchChange(changedTouches, true);
+      this.onTouchChange(touches);
     }
-    const instaRelease = [];
-    for (const touch of changedTouches) {
-      const startTime = this.touchStartTimes.get(touch.identifier);
-      if (startTime == void 0) {
-        throw new Error("?");
-      }
-      const duration = Date.now() - startTime;
-      this.touchStartTimes.delete(touch.identifier);
-      if (duration > 8) {
-        instaRelease.push(touch);
-        continue;
-      }
-      setTimeout(() => {
-        if (this.onTouchEnd) {
-          this.onTouchEnd([touch]);
-        }
-      }, 8 - duration);
-    }
-    if (this.onTouchEnd && instaRelease.length) {
-      this.onTouchEnd(instaRelease);
+    if (this.onTouchEnd) {
+      this.onTouchEnd(finger);
     }
   }
 }
@@ -355,93 +316,59 @@ function updateFaderAnalog() {
     }
   }
 }
-let laneTouches = new Array(12).fill([]);
-function updateLaneState() {
-  for (let i = 0; i < 12; i++) {
-    laneState[i] = !!laneTouches[i].length;
+window.touchMgr.onTouchStart = (finger) => {
+  const x = finger.x / document.body.clientWidth;
+  const y = finger.y / document.body.clientHeight;
+  if (y > 0.35) {
+    return;
   }
-}
-function removeTouches(touches) {
-  let changed = false;
-  for (let i = 0; i < 12; i++) {
-    const oldLen = laneTouches[i].length;
-    laneTouches[i] = laneTouches[i].filter((v) => touches.findIndex((t) => t.identifier == v) == -1);
-    if (oldLen != laneTouches[i].length) {
-      changed = true;
-    }
+  if (faderTouches[1] && finger.x < faderTouches[1].x) {
+    faderTouches[0] = finger;
+  } else if (x < 0.5 && !faderTouches[0]) {
+    faderTouches[0] = finger;
   }
-  return changed;
-}
-window.touchMgr.onTouchStart = (touches) => {
-  const touchArr = Array.from(touches);
-  for (const touch of touchArr) {
-    const x = touch.clientX / document.body.clientWidth;
-    const y = touch.clientY / document.body.clientHeight;
-    if (y > 0.5) {
-      continue;
-    }
-    if (faderTouches[1] && touch.clientX < faderTouches[1].clientX) {
-      faderTouches[0] = touch;
-    } else if (x < 0.5 && !faderTouches[0]) {
-      faderTouches[0] = touch;
-    }
-    if (faderTouches[0] && touch.clientX > faderTouches[0].clientX) {
-      faderTouches[1] = touch;
-    } else if (x > 0.5 && !faderTouches[1]) {
-      faderTouches[1] = touch;
-    }
+  if (faderTouches[0] && finger.x > faderTouches[0].x) {
+    faderTouches[1] = finger;
+  } else if (x > 0.5 && !faderTouches[1]) {
+    faderTouches[1] = finger;
   }
 };
-window.touchMgr.onTouchChange = (touches, noSend) => {
-  const touchArr = Array.from(touches);
-  let changed = removeTouches(touchArr);
-  for (const touch of touchArr) {
-    const x = touch.clientX / document.body.clientWidth;
-    const y = touch.clientY / document.body.clientHeight;
-    if (touch.identifier == faderTouches[0]?.identifier) {
-      faderTouches[0] = touch;
+window.touchMgr.onTouchChange = (fingers) => {
+  laneState.fill(false);
+  for (const finger of fingers) {
+    const x = finger.x / document.body.clientWidth;
+    const y = finger.y / document.body.clientHeight;
+    if (finger.id == faderTouches[0]?.id) {
+      faderTouches[0] = finger;
       continue;
     }
-    if (touch.identifier == faderTouches[1]?.identifier) {
-      faderTouches[1] = touch;
+    if (finger.id == faderTouches[1]?.id) {
+      faderTouches[1] = finger;
       continue;
     }
-    if (y < 0.5) {
+    if (y < 0.35) {
       continue;
     }
     const column = Math.max(0, Math.min(Math.floor(x * 12), 11));
-    laneTouches[column].push(touch.identifier);
-    changed = true;
+    laneState[column] = true;
   }
-  if (changed) {
-    updateLaneState();
-    if (!noSend) sendButtonState(laneState);
-  }
+  sendButtonState(laneState);
   frames++;
 };
-window.touchMgr.onTouchEnd = (touches) => {
-  const touchArr = Array.from(touches);
-  const changed = removeTouches(touchArr);
-  if (changed) {
-    updateLaneState();
-    sendButtonState(laneState);
-  }
+window.touchMgr.onTouchEnd = (finger) => {
   for (let i = 0; i < 2; i++) {
     const faderTouch = faderTouches[i];
     if (!faderTouch) {
       continue;
     }
-    for (const touch of touchArr) {
-      if (faderTouch.identifier !== touch.identifier) {
-        continue;
-      }
-      faderTouches[i] = null;
-      lastFaderPositions[i] = null;
-      faderDirs[i] = 0;
-      break;
+    if (faderTouch.id !== finger.id) {
+      return;
     }
+    faderTouches[i] = null;
+    lastFaderPositions[i] = null;
+    faderDirs[i] = 0;
+    break;
   }
-  frames++;
 };
 const update = () => {
   for (let i = 0; i < lanes.length; i++) {
@@ -459,7 +386,7 @@ const update = () => {
     if (!faderTouch) {
       continue;
     }
-    const x = faderTouch.clientX - i * areaWidth;
+    const x = faderTouch.x - i * areaWidth;
     const lastX = lastFaderPositions[i];
     if (lastX !== null) {
       const delta = x - lastX;
@@ -503,7 +430,7 @@ requestAnimationFrame(update);</script>
 
 .fader {
   display: flex;
-  height: 50vh;
+  height: 35vh;
 }
 
 .fader>div {
@@ -544,7 +471,7 @@ requestAnimationFrame(update);</script>
 .lane {
   display: flex;
   background-color: #000;
-  height: 50vh;
+  height: 65vh;
 }
 
 .lane>div {
