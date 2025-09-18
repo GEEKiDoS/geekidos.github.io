@@ -370,7 +370,7 @@ window.touchMgr.onTouchEnd = (finger) => {
       continue;
     }
     if (faderTouch.id !== finger.id) {
-      return;
+      continue;
     }
     faderTouches[i] = null;
     lastFaderPositions[i] = null;
