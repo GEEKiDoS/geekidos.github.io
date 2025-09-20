@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
+    <link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoiUG9sYXJpcyBUb3VjaCIsImljb25zIjpbXX0=">
     <title>Polaris Touch</title>
   <script type="module" crossorigin>(function polyfill() {
   const relList = document.createElement("link").relList;
@@ -215,7 +216,7 @@ Thanks for your using, by GEEKi`, "192.168.1.100:1337");
 }
 if (window.location.protocol.toLowerCase() == "https:") {
   alert("Please use HTTP instead, You can't connect to insecure websocket in https environment.");
-  throw new Error("NO_HTTPS");
+  window.location.protocol = "http:";
 }
 let lastLaneState = new Array(12).fill(false);
 function sendButtonState(laneState2) {
@@ -360,7 +361,6 @@ window.touchMgr.onTouchChange = (fingers) => {
     const column = Math.max(0, Math.min(Math.floor(x * 12), 11));
     laneState[column] = true;
   }
-  sendButtonState(laneState);
   frames++;
 };
 window.touchMgr.onTouchEnd = (finger) => {
@@ -419,12 +419,23 @@ const update = () => {
   updateFaderAnalog();
   window.requestAnimationFrame(update);
 };
-requestAnimationFrame(update);</script>
+requestAnimationFrame(update);
+setInterval(() => {
+  sendButtonState(laneState);
+}, 8);
+const errorDisplay = document.querySelector("#errors");
+if (errorDisplay) {
+  window.onerror = (...args) => {
+    errorDisplay.innerText += JSON.stringify(args) + "\n";
+    errorDisplay.scrollTop = errorDisplay.scrollHeight;
+  };
+}</script>
   <style rel="stylesheet" crossorigin>body {
   margin: 0;
   touch-action: none;
   background-color: #000;
   font-family: Arial, Helvetica, sans-serif;
+  overflow: hidden;
 }
 
 * {
@@ -510,11 +521,23 @@ requestAnimationFrame(update);</script>
   padding-left: 1em;
   padding-right: 1em;
   border-right: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+#errors {
+  position: absolute;
+  top: 24px;
+  left: 0;
+  width: 100vw;
+  height: calc(100vh-24px);
+  color: #aa0000;
+  font-family: monospace;
+  z-index: 99999;
 }</style>
 </head>
 
 <body>
     <div class="container">
+        <div id="errors"></div>
         <div class="status">
             <div id="fps">0 Hz</div>
             <div id="fader">CENTER | CENTER</div>
